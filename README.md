@@ -7,9 +7,9 @@ Tools to manage Interplanetary Survey Droids in SWGEmu.
 | isdreporter.au3    | Auto-It script. Uses hotkeys ingame to automate sending ISD droids. |
 | isdreporter.py     | Python script. Processes saved ISD mails. Submits new spawns to Galaxy Harvester. |
 | SwgMail.py 		     | Mail parsing class (courtesy of Dasch). |
-| restypes.txt 	     | All resource types in SWG and GH format. Should work for any server. |
+| restypes.txt 	     | All resource types in SWG and Galaxy Harvester format. Should work for any server. |
 | restypeseif.txt    | EiF non-creature resource types. Faster than using above (recommend making an equivalent for your own server). |
-| current.xml			   | Current GH data export (created/downloaded during runtime). |
+| current.xml			   | Current Galaxy Harvester data export (created/downloaded during runtime). |
 
 ### Usage
 1. Start SWG in windowed mode.
@@ -60,7 +60,7 @@ By default `isdreporter.au3` is configured for 13 survey tools being used by a 1
 2. `isdreporter.py` does not mark expired spawns as unavailable. 
 3. `isdreporter.py` processes .mail files sequentially, and submits new spawns as it finds them.
 
-An improved approach might be to process all spawns into one structure, formatted similarly to current.xml. That would allow for creation of a set of new spawns, and a set of expired spawns. Then those sets could be submitted to Galaxy Harvester in one operation.
+An improved approach might be to process all mails into one structure, formatted similarly to current.xml. That would allow for creation of a set of new spawns, and a set of expired spawns. Then those sets could be submitted to Galaxy Harvester in one operation.
 
 ***
 ### Screenshots
