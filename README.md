@@ -92,6 +92,16 @@ Discord webhook message:
 
 ![isdreporterWebhookMessage](https://github.com/user-attachments/assets/95a55c3d-f71f-4b37-96a5-f055351de19e)
 
+Positioning of the "Choose survey tool" window at 1080p:
+
+![screenShot0477](https://github.com/user-attachments/assets/cfdc85c5-291b-4a58-a32e-527a509000d6)
+
+Positioning of the "Choose planet" window at 1080p:
+
+![screenShot0478](https://github.com/user-attachments/assets/62cdba02-882d-4b8d-a3b1-6c1f2f349c2e)
+
+
+
 
 
 
