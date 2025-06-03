@@ -86,15 +86,15 @@ Using the `ctrl-shift-d` hotkey ingame:
 
 First safety check of the `isdreporter.py` script:
 
-![isdreporter1n](https://github.com/user-attachments/assets/c68f31ea-89fe-4c4b-a780-9cbc935b6c05)
+![isdreporter1n](https://github.com/user-attachments/assets/48f22ab0-3acb-4c89-bf18-114613e601f5)
 
 Second safety check of the `isdreporter.py` script:
 
-![isdreporter2n](https://github.com/user-attachments/assets/92b22ead-59ab-4aa4-9fa0-1814acf70316)
+![isdreporter2n](https://github.com/user-attachments/assets/f0213bff-8eab-4b47-8024-2ba4e8483f94)
 
 `isdreporter.py` submitting new spawns to Galaxy Harvester:
 
-![isdreporter3n](https://github.com/user-attachments/assets/f527d676-71f3-496b-831a-4d48c90c2600)
+![isdreporter3n](https://github.com/user-attachments/assets/219fb1fb-4a7d-4d31-b46d-d18f728e8f46)
 
 `isdreporter.py` completion:
 
