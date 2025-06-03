@@ -1,119 +1,89 @@
 ﻿""" 
-ISD Reporter v1.0 
-1. Logs in to Galaxy Harvester to retrieve session token and current data export.
-2. Processes spawn info from saved interplanetary survey droid emails. 
-3. Submits potentially new spawns to Galaxy Harvester.
-4. (Optional) Submits all spawns to Galaxy Harvester.
-5. (Optional) Sends Discord webhook messages.
+ISD Reporter v1.1
+- Reads config from isdreporter.cfg 
+- Logs in to Galaxy Harvester to retrieve session token and current data export.
+- Processes spawn info from saved interplanetary survey droid emails. 
+- Submits potentially new spawns to Galaxy Harvester (new is any spawn that is NOT found in the GH data export).
+- (Optional) Submits all spawns to Galaxy Harvester (aka verifying).
+- (Optional) Sends Discord webhook message(s).
+- (Optional) Moves processed .mail files to archive_folder_path.
 
-Files
-isdreporter.py 		This file.
-SwgMail.py 			Parsing class (courtesy of Dasch).
-restypes.txt 		All resource types in SWG and GH format. Should work for any server. 
-restypeseif.txt 	EiF non-creature resource types. Faster than using above (recommend making an equivalent for your own server).
+isdreporter.cfg		Config file.
+SwgMail.py			Parsing class (courtesy of Dasch).
+restypes.txt		All resource types in SWG and GH format. Should work for any server. 
+restypeseif.txt		EiF non-creature resource types. Much faster than using above (recommend making an equivalent for your own server).
 current.xml			Current Galaxy Harvester data export (downloaded during runtime).
 """
 
-submit_everything = False						# False to only submit new spawns. Recommend False.
-notify_discord = False							# True to send Discord webhook messages.
-safety_checks = True							# True to enable y/n confirmation at config and mail stages. Recommend True.
-max_age_hours = 1								# .mail files older than this will not be processed.
-
-mail_folder_path = "/mnt/c/Games/SWGinstall/profiles/username/servername/mail_firstname lastname"
-#mail_folder_path = "C:\Games\SWGinstall\profiles\username\servername\mail_firstname lastname"
-restypes_file = "restypeseif.txt"				# Recommend editing restypes.txt to suit your own server.
-
-galaxy_id = "1234"								# DO NOT get this wrong. It comes from e.g: https://galaxyharvester.net/resource.py/1234/exampleism
-gh_name = "username"							# Extended characters might not work.
-gh_pass = "password"
-
-webhook_name = "ISD-Reporter"
-webhook_urls = {								# Any number of webhook urls will work. The name can be whatever.
-	"First server":"https://discord.com/api/webhooks/0123456789/abcdefghijklmnopqrstuvwxyz",
-	"Second server":"https://discord.com/api/webhooks/0123456789/abcdefghijklmnopqrstuvwxyz",
-	"Third server":"https://discord.com/api/webhooks/0123456789/abcdefghijklmnopqrstuvwxyz"
-}
-
-import sys
+import ast
+import configparser
 import os
+import re
+import sys
 import time
 from datetime import datetime
-import re
 import json
-import xml.etree.ElementTree as ET 
+import xml.etree.ElementTree as ET
+from operator import itemgetter
+from urllib.parse import urlencode
 import httplib2
 from SwgMail import SwgMail
-from urllib.parse import urlencode
-from operator import itemgetter
 
-global session
-global gh_current_resnames
+def load_config(config_path='isdreporter.cfg'):
 
-def type_slowly(str):
+	config = configparser.ConfigParser()
+
+	if not config.read(config_path):
+		sys.exit(f"\nExiting: Could not find config file {config_path}")
+	return config
+
+def type_slowly(text):
+
+	YELLOW = '\033[1;33m'
+	RESET = '\033[0m'
 	
-	for letter in str:
+	print(YELLOW, end='', flush=True)
+
+	for letter in text:
 		print(letter, end='', flush=True)
 		time.sleep(0.025)
 
-def show_banner():
-    
-    banner = '''\033[1;33m
-    ╔───────────────────────────────────────────────╗
-    │░█▀▀░█▀█░█░░░█▀▀░█▀█░░░█▄█░▀█▀░█▀█░▀█▀░█▀█░█▀▀░│
-    │░▀▀█░█░█░█░░░█░░░█░█░░░█░█░░█░░█░█░░█░░█░█░█░█░│
-    │░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░░░▀░▀░▀▀▀░▀░▀░▀▀▀░▀░▀░▀▀▀░│
-    │░░█▀▀░█▀█░█▀▄░█▀█░█▀█░█▀▄░█▀█░▀█▀░▀█▀░█▀█░█▀█░░│
-    │░░█░░░█░█░█▀▄░█▀▀░█░█░█▀▄░█▀█░░█░░░█░░█░█░█░█░░│
-    │░░▀▀▀░▀▀▀░▀░▀░▀░░░▀▀▀░▀░▀░▀░▀░░▀░░▀▀▀░▀▀▀░▀░▀░░│
-    ╚───────────────────────────────────────────────╝
-                 Survey Droid Reporter
-    \033[0m'''
-
-    print(banner)
-
-def show_config():
-	
-	print(f"\t submit_everything: \t {submit_everything}")
-	print(f"\t notify_discord: \t {notify_discord}")
+	print(RESET, end='', flush=True)
 	
 def gh_login():
 
-	type_slowly("\n\033[1;33mConnecting to Galaxy Harvester...\033[0m\n")
+	type_slowly("\nConnecting to Galaxy Harvester...\n")
 	
-	url = "https://galaxyharvester.net/authUser.py?loginu=" + gh_name + "&passu=" + gh_pass
+	url = login_url + "?loginu=" + gh_name + "&passu=" + gh_pass
 	http = httplib2.Http()
 	(resp_headers, content) = http.request(url,"GET")
 
-	# gh returns "success-1234567890\n " We need the numbers as our session token
-	
+	# gh returns "success-1234567890\n " We need the part between - and \n	
 	try:
-		pattern = 'success-(.*)'
-		match = re.search(pattern, str(content))
-		gh_token = str(match.group(1))
-		gh_token = gh_token[:-3]
+		match = re.search('success-(.*)', str(content))
+		gh_token = str(match.group(1))[:-3]
 		print("\n\t Username: \t\t",gh_name)
+		#print("\t Session: \t\t",gh_token)
 	except:
-		sys.exit("\t Exiting - GH login failed")
+		sys.exit(f"\nExiting: Login failed for user {gh_name}")
 
 	return gh_token # used by the gh_submit function
 
 def fetch_gh_data():
 
-	# save the xml data export from GH
-	
-	url = "https://galaxyharvester.net/exports/current" + galaxy_id + ".xml"
+	# save the xml data export from GH	
+	url = data_url
 	http = httplib2.Http()
 	(resp_headers, content) = http.request(url,"GET")
 	
 	if resp_headers.status != 200: 
-		sys.exit("\t Exiting - no data export found")  
+		sys.exit(f"\nExiting: No data export found at {url}")  
 	else:
 		str_content = content.decode('utf-8')
 		with open('current.xml', 'w') as f:
 			f.write(str_content) 
 
-	# make a list of resource names known to GH
-						
+	# make a list of resource names known to GH						
 	root = ET.fromstring(str_content)
 	gh_current_resnames = set()
 
@@ -122,12 +92,8 @@ def fetch_gh_data():
 		gh_current_resnames.add(resname)
 
 	# and some safety
-
 	galaxy_name = root.find('.//galaxy').text	
 	print('\t',"Galaxy:",'\t\t',galaxy_name) 
-
-	name_count = len(gh_current_resnames)
-	print('\t',"Spawns:",'\t\t',name_count) 
 
 	as_of_date = root.attrib['as_of_date']
 	as_of_date = datetime.strptime(as_of_date, '%a, %d %b %Y %H:%M:%S %z')
@@ -139,28 +105,28 @@ def fetch_gh_data():
 	print(f"\t All spawns younger than that will be counted as new.")
 
 	if safety_checks == True:
-		config_check = input("\n\t Safety check 1 of 2. Continue? (y/n): ")
+		config_check = input("\n\t Safety check 1 of 2. Is that the correct galaxy? (y/n): ")
 		if config_check != "y":
-			sys.exit("\t Exiting - disastrous mess averted")
+			sys.exit(f"\nExiting: Disastrous mess averted")
 	
 	return gh_current_resnames # used by the process_isdmails function
 
 def find_isdmails(mail_folder_path, max_age_hours):
     
-	type_slowly("\n\033[1;33mLooking for saved survey reports...\033[0m\n\n")
+	type_slowly("\nLooking for saved survey reports...\n\n")
 	
 	isdmails = []
 	current_time = time.time()
 
-	# make a list of files 
-
+	# make a list of files
 	for fname in os.listdir(mail_folder_path):
 		if fname.endswith(".mail"):
 			file_path = os.path.join(mail_folder_path, fname)
 			file_mod_time = os.path.getmtime(file_path)
 			file_age_hours = (current_time - file_mod_time) / 3600
 
-			if file_age_hours <= max_age_hours: # this is fairly naive, and relies on the player only saving NEW ISD emails ingame / deleting OLD ISD emails ingame
+			# best practice is for the player to only save *new* ISD emails from ingame i.e to delete *old* ISD emails
+			if file_age_hours <= max_age_hours: 
 				with open(file_path) as mail:
 					line = mail.readlines()
 					subject = line[2]
@@ -170,45 +136,39 @@ def find_isdmails(mail_folder_path, max_age_hours):
 						isdmails.append((fname, subject))
 
 	# sort and display
-
 	isdmails.sort(key=itemgetter(1)) 
 
 	for item in isdmails:
 		print('\t', item[0][:-5], '\t', item[1][:-1]) 
 	
-	print(f"\t Survey reports: {len(isdmails)} newer than {max_age_hours} hour(s)")
+	print(f"\t Found {len(isdmails)} newer than {max_age_hours} hour(s)")
 
-	# more safety
-	
+	# more safety	
 	if len(isdmails) == 0 :
-		print(f"\t Exiting - no survey reports found")
-		sys.exit()
+		sys.exit(f"\nExiting: No survey reports found at {mail_folder_path}")
 
 	if safety_checks == True:
-		mails_check = input("\n\t Safety check 2 of 2. Continue? (y/n): ")
+		mails_check = input("\n\t Safety check 2 of 2. Are those the correct emails? (y/n): ")
 		if mails_check != "y":
-			sys.exit("\t Exiting - disastrous mess averted")
+			sys.exit("\nExiting: Disastrous mess averted")
 
 	# process in order from Chandrila chemical to Yavin water
-
 	process_isdmails(isdmails) 
 
 def process_isdmails(isdmails):
 	
-	type_slowly("\n\033[1;33mProcessing spawns from reports...\033[0m\n")
+	type_slowly("\nProcessing spawns from reports...\n\n")
 
 	spawn_count = 0
 	resname_list = []
 
 	# parse each file for spawns
-
 	for mail in isdmails:
 		mail_file = f"{mail_folder_path}/{mail[0]}"  # need full path
 		mail_data = open(mail_file).read()
 		mail_spawns = SwgMail.parse_survey_droid(mail_data) 
 		
 		# get the spawn data ready for GH submit
-
 		for spawn in mail_spawns: 
 			spawn_count +=1
 			planet = spawn['planet']
@@ -260,9 +220,8 @@ def process_isdmails(isdmails):
 				except KeyError:
 					UT = ''
 
-			# submit to gh 
-
-			if submit_everything == False:	
+			# submit to gh
+			if submit_only_new_spawns is True:	
 				if resname.lower() in gh_current_resnames: # check if name is known to gh
 					print(spawn_count,'\t',resname.upper(),' \t',restype) # not new so we display but dont submit
 				else:
@@ -276,8 +235,7 @@ def process_isdmails(isdmails):
 				gh_submit(planet, resname, restype, CR, CD, DR, FL, HR, MA, PE, OQ, SR, UT) 
 				resname_list.append(resname)
 
-	# make the message text
-
+	# make and show the message text
 	count_mails = len(isdmails)
 	unique_resnames = set(resname_list)  
 	count_unique = len(unique_resnames)
@@ -291,10 +249,12 @@ def process_isdmails(isdmails):
 	f"{count_mails} Interplanetary Survey Droid reports have been submitted to [Galaxy Harvester](https://galaxyharvester.net/).\n"
 	f"||{count_unique} new resources were found. The current galactic OQ average is {oq_average}.||"
 	)
-			
-	print("\n" + message)
+	
+	type_slowly("\nTask summary...\n\n")		
+	print(message)
 
-	if notify_discord is True:	
+	# and send the message to Discord
+	if discord_notify is True:	
 		discord_webhook(message)
 	
 def gh_submit(planet, resname, restype, CR, CD, DR, FL, HR, MA, PE, OQ, SR, UT):
@@ -309,7 +269,7 @@ def gh_submit(planet, resname, restype, CR, CD, DR, FL, HR, MA, PE, OQ, SR, UT):
 			restype = js[restype] 
 			
 			# submit spawn to GH
-			url = "https://galaxyharvester.net/postResource.py?galaxy=" + galaxy_id + "&planet=" + planet + "&resName=" + resname + "&resType=" + restype + "&CR=" + CR + "&CD=" + CD + "&DR=" + DR + "&FL=" + FL + "&HR=" + HR + "&MA=" + MA + "&PE=" + PE + "&OQ=" + OQ + "&SR=" + SR + "&UT=" + UT
+			url = submit_url + "?galaxy=" + galaxy_id + "&planet=" + planet + "&resName=" + resname + "&resType=" + restype + "&CR=" + CR + "&CD=" + CD + "&DR=" + DR + "&FL=" + FL + "&HR=" + HR + "&MA=" + MA + "&PE=" + PE + "&OQ=" + OQ + "&SR=" + SR + "&UT=" + UT
 			http = httplib2.Http()
 			header = {'Cookie': gh_sid}
 			(resp_headers, content) = http.request(url,'POST',headers=header)
@@ -325,11 +285,11 @@ def gh_submit(planet, resname, restype, CR, CD, DR, FL, HR, MA, PE, OQ, SR, UT):
 def discord_webhook(message):
 
     webhook_data = {
-        "username": webhook_name,
+        "username": discord_name,
         "content": message
     }
 
-    for key, url in webhook_urls.items():
+    for server_name, url in webhook_urls.items():
         try:
             response = httplib2.Http().request(
                 url,
@@ -337,30 +297,59 @@ def discord_webhook(message):
                 urlencode(webhook_data).encode('utf-8'),  
                 headers={'Content-Type': 'application/x-www-form-urlencoded'}
             )
-            print(f"{key} webhook response: {response[0].status}")
+            print(f"{server_name} webhook response: {response[0].status}")
         
         except Exception as e:
-            print(f"{key} webhook error: {e}")
+            print(f"{server_name} webhook error: {e}")
 
-###	start ###
-start_time = time.time()
+def move_to_archive(mail_folder_path):
 
-show_banner()
-show_config()	
+	if not os.path.exists(archive_folder_path):
+		os.makedirs(archive_folder_path)
+
+	for filename in os.listdir(mail_folder_path):
+		if filename.endswith('.mail'):
+			source_file = os.path.join(mail_folder_path, filename)
+			destination_file = os.path.join(archive_folder_path, filename)
+			os.rename(source_file, destination_file)
+
+###########	start here ###########
+
+config = load_config()
+
+try:
+	banner = config['settings']['banner']
+	title = config['settings']['title']
+	show_banner = ast.literal_eval(config['settings']['show_banner'])
+	safety_checks = ast.literal_eval(config['settings']['safety_checks'])
+	max_age_hours = int(config['settings']['max_age_hours'])
+	archive_mail_files = ast.literal_eval(config['settings']['archive_mail_files'])
+
+	archive_folder_path = config['paths']['archive_folder_path']
+	mail_folder_path = config['paths']['mail_folder_path']
+	restypes_file = config['paths']['restypes_file']
+	
+	galaxy_id = config['galaxyharvester']['galaxy_id']
+	gh_name = config['galaxyharvester']['gh_name']
+	gh_pass = config['galaxyharvester']['gh_pass']
+	data_url = "https://galaxyharvester.net/exports/current" + galaxy_id + ".xml"
+	login_url = config['galaxyharvester']['login_url']
+	submit_url = config['galaxyharvester']['submit_url']
+	submit_only_new_spawns = ast.literal_eval(config['galaxyharvester']['submit_only_new_spawns'])	
+
+	discord_name = config['discord']['discord_name']
+	discord_notify = ast.literal_eval(config['discord']['discord_notify'])
+	webhook_urls = dict(config.items('webhook_urls'))
+except (ValueError, KeyError) as e:
+	sys.exit(f"Error: Missing or invalid configuration option {e}")
+
+if show_banner is True:
+	print(f"\033[1;33m{banner}\033[0m")
+	print(f"\t     {title}")	
 
 session = gh_login()	
 gh_current_resnames = fetch_gh_data()		
 find_isdmails(mail_folder_path, max_age_hours)	
 
-end_time = time.time()
-execution_time = end_time - start_time
-print(f"\n\033[1;33mCompleted in {execution_time:.0f} seconds.\033[0m")
-
-
-
-
-
-
-
-
-
+if archive_mail_files is True:
+	move_to_archive(mail_folder_path)
