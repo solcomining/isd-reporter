@@ -1,5 +1,5 @@
 ### ISD Reporter
-Tools to automate Interplanetary Survey Droid tasks in SWGEmu. Can send droids ingame, parse spawn info from saved emails, and submit spawn info to Galaxy Harvester. 
+Tools to manage Interplanetary Survey Droid tasks for SWGEmu. Can send droids ingame, parse spawn info from saved emails, and submit spawn info to Galaxy Harvester. 
 
 Get permission from your server admin before using Auto-It to automate keyboard and mouse control. I'm not responsible if you get banned.
 
