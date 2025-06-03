@@ -106,11 +106,11 @@ Discord webhook message:
 
 Positioning of the "Choose survey tool" window at 1080p:
 
-![screenShot0477](https://github.com/user-attachments/assets/cfdc85c5-291b-4a58-a32e-527a509000d6)
+![isdreporterWindowPos1](https://github.com/user-attachments/assets/9fa6168b-fda2-42b0-9439-96834bad3977)
 
 Positioning of the "Choose planet" window at 1080p:
 
-![screenShot0478](https://github.com/user-attachments/assets/62cdba02-882d-4b8d-a3b1-6c1f2f349c2e)
+![isdreporterWindowPos2](https://github.com/user-attachments/assets/08146b02-6abc-4cf3-bb86-34a5c8806a70)
 
 
 
