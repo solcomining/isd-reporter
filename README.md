@@ -1,5 +1,7 @@
 ### ISD Reporter
-Tools to automate Interplanetary Survey Droid tasks in SWGEmu. Can send droids ingame, parse spawn info from saved emails, and submit spawn info to Galaxy Harvester.
+Tools to automate Interplanetary Survey Droid tasks in SWGEmu. Can send droids ingame, parse spawn info from saved emails, and submit spawn info to Galaxy Harvester. 
+
+Get permission from your server admin before using Auto-It to automate keyboard and mouse control. I'm not responsible if you get banned.
 
 | Filename           |            |
 | :----------------- | :--------- |
@@ -38,9 +40,9 @@ Minimum to edit would be `mail_folder_path`, `galaxy_id`, `gh_name`, and `gh_pas
 | galaxy_id           | DO NOT get this wrong. It comes from e.g : https://galaxyharvester.net/resource.py/99/exampleism |
 | gh_name             | Username |
 | gh_pass             | Password |
-| login_url           | If you need to use a different server than galaxyharvester.net |
-| submit_url          | If you need to use a different server than galaxyharvester.net  |
-| submit_only_new_spawns | False if you want to submit every spawn, i.e verify existing spawns. |
+| login_url           | To use a different server other than galaxyharvester.net |
+| submit_url          | To use a different server other than galaxyharvester.net  |
+| submit_only_new_spawns | False to submit every spawn, i.e to verify existing spawns. |
 | [discord]           |
 | discord_name        | The name of the Discord message sender. |
 | discord_notify      | True to send Discord webhook messages. |
@@ -50,15 +52,9 @@ Minimum to edit would be `mail_folder_path`, `galaxy_id`, `gh_name`, and `gh_pas
 | AnyNameHere3        | Discord webhook URL. Any name and number of servers will work.  |
 
 ### Caveats
-1. Be very careful with the `galaxy_id` value in `isdreporter.py`. You don't want to submit to the wrong galaxy.
+1. Be careful with the `galaxy_id` value. You don't want to submit to the wrong galaxy.
 2. `isdreporter.py` does not mark expired spawns as unavailable. 
 3. `isdreporter.py` processes .mail files sequentially, and submits new spawns as it finds them. A new spawn is one that is found in a .mail file but not in the GH data export.
-4. Get permission from your server admin before using Auto-It to automate keyboard and mouse control. I'm not responsible if you get banned.
-
-### Ingame config if using Auto-It
-1. The "Choose survey tool" window must be positioned top right corner. Sized as narrow and short as possible at 1080p.
-2. The "Choose planet" window must be positioned top right corner. Sized as narrow and tall as possible at 1080p.
-3. The stack of ISD droids must not move around in the inventory. Sorting inventory by type is helpful..
 
 ### Auto-It config
 Using Auto-It is optional. Download is available from: https://www.autoitscript.com/site/autoit/downloads/
@@ -72,6 +68,11 @@ Using Auto-It is optional. Download is available from: https://www.autoitscript.
 | $aPlanetPos        | List of Y coordinates to click in the "Choose planet" window.  |
 
 By default `isdreporter.au3` is configured for 13 survey tools being used by a 13-use ISD stack for 13 planets, and with the ISD windows positioned top right on a 1080p screen. To edit the script to account for other screen resolutions, take a screenshot of the positioned ISD windows and use MS Paint to find the x,y coordinates.
+
+### Ingame config if using Auto-It
+1. The "Choose survey tool" window must be positioned top right corner. Sized as narrow and short as possible at 1080p.
+2. The "Choose planet" window must be positioned top right corner. Sized as narrow and tall as possible at 1080p.
+3. The stack of ISD droids must not move around in the inventory. Sorting inventory by type is helpful..
 
 ***
 ### Screenshots
