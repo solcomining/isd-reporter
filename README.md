@@ -24,7 +24,16 @@ Get permission from your server admin before using Auto-It to automate keyboard 
 9. Run `isdreporter.py` to process the saved emails and submit new spawns to Galaxy Harvester.
 
 ### Python config
-Minimum to edit would be `mail_folder_path`, `galaxy_id`, `gh_name`, and `gh_pass`. Discord and archive features are optional. 
+
+To get started, you'll want to copy the `isdreporter.cfg.example` to `isdreporter.cfg`. For example, in bash, you'd run:
+
+```sh
+cp isdreporter.cfg.example isdreporter.cfg
+```
+
+From there, you can edit the values in `isdreporter.cfg`.
+
+Minimum to edit would be `mail_folder_path`, `galaxy_id`, `gh_name`, and `gh_pass`. Discord and archive features are optional.
 
 | isdreporter.cfg     |            |
 | :--------------     | :--------- |
