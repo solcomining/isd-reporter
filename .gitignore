@@ -1,2 +1,5 @@
+# downloaded and saved during runtime
 /current.xml
+
+# required to run, but expected to contain login credentials
 /isdreporter.cfg
